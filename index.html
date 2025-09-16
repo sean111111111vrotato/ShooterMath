@@ -123,7 +123,7 @@ function draw() {
 
     // Draw answers with pseudo-3D
     answers.forEach(a=>{
-        const scale = 300/a.z;
+        const scale = Math.min(300 / a.z,1);
         const aw = a.width * scale;
         const ah = a.height * scale;
         const ax = a.x + (a.width*(1-scale)/2);
