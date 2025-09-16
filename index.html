@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Math FPS Shooter</title>
+<style>
+    body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; background: #111; color: white;}
+    canvas { display: block; margin: 0 auto; background: #222; }
+    #score { position: absolute; top: 10px; left: 10px; font-size: 20px; }
+    #question { position: absolute; top: 40px; left: 10px; font-size: 18px; width: 80%; }
+</style>
+</head>
+<body>
+<div id="score">Score: 0</div>
+<div id="question"></div>
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let score = 0;
+let bullets = [];
+let answers = [];
+let currentQuestionIndex = 0;
+let gameOver = false;
+
+const questions = [
+    {q: "Which is a prime number?", options: ["4", "7", "9", "12"], answer: "7"},
+    {q: "Simplify: 3 + 5 - 2", options: ["6", "5", "7", "8"], answer: "6"},
+    {q: "LCM of 4 and 6?", options: ["10", "12", "14", "24"], answer: "12"},
+    {q: "What is -3 + 5?", options: ["2", "-2", "3", "1"], answer: "2"},
+    {q: "3x if x = 2?", options: ["6", "5", "4", "8"], answer: "6"},
+    // ... you can add up to 100 questions here
+];
+
+const player = { x: canvas.width/2, y: canvas.height - 100, width: 10, height: 10, speed: 7 };
+const keys = {};
+
+document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+document.addEventListener('keydown', e => { if(e.key === ' ') shoot(); });
+
+function shoot() {
+    bullets.push({x: player.x, y: player.y, width: 4, height: 10});
+}
+
+function generateAnswers() {
+    answers = [];
+    const opts = questions[currentQuestionIndex].options;
+    for(let i=0;i<opts.length;i++){
+        answers.push({
+            x: 100 + i*150,
+            y: -50,
+            width: 120,
+            height: 50,
+            text: opts[i],
+            speed: 2 + Math.random() * 1.5
+        });
+    }
+    document.getElementById('question').innerText = "Question: " + questions[currentQuestionIndex].q;
+}
+
+function update() {
+    if(gameOver) return;
+
+    // Move player
+    if(keys['a'] && player.x > 0) player.x -= player.speed;
+    if(keys['d'] && player.x < canvas.width) player.x += player.speed;
+
+    // Move bullets
+    bullets.forEach((b,i)=>{
+        b.y -= 8;
+        answers.forEach((a,j)=>{
+            if(b.x < a.x + a.width && b.x + b.width > a.x &&
+               b.y < a.y + a.height && b.y + b.height > a.y){
+                if(a.text === questions[currentQuestionIndex].answer){
+                    score++;
+                    nextQuestion();
+                } else {
+                    score = Math.max(0, score - 1);
+                }
+                bullets.splice(i,1);
+            }
+        });
+    });
+
+    // Move answers toward player
+    answers.forEach((a,i)=>{
+        a.y += a.speed;
+        if(a.y + a.height >= player.y){ 
+            if(a.text === questions[currentQuestionIndex].answer){
+                gameOver = true;
+                alert("You missed the correct answer! Game Over! Score: " + score);
+            } else {
+                answers.splice(i,1);
+            }
+        }
+    });
+}
+
+function nextQuestion() {
+    currentQuestionIndex = (currentQuestionIndex + 1) % questions.length;
+    generateAnswers();
+    bullets = [];
+}
+
+function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // Draw player as a simple rectangle (you can make it a gun later)
+    ctx.fillStyle = "white";
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+
+    // Draw bullets
+    bullets.forEach(b=>{
+        ctx.fillStyle = "yellow";
+        ctx.fillRect(b.x, b.y, b.width, b.height);
+    });
+
+    // Draw answers
+    answers.forEach(a=>{
+        ctx.fillStyle = "red";
+        ctx.fillRect(a.x, a.y, a.width, a.height);
+        ctx.fillStyle = "white";
+        ctx.font = "20px Arial";
+        ctx.fillText(a.text, a.x + 10, a.y + 30);
+    });
+
+    document.getElementById('score').innerText = "Score: " + score;
+}
+
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+generateAnswers();
+gameLoop();
+</script>
+</body>
+</html>
