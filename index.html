@@ -3,156 +3,201 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>3D Math Shooter</title>
+<title>Tinorpicin — No Delay</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 <style>
-    body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; background: #111; color: white;}
-    canvas { display: block; margin: 0 auto; background: #222; }
-    #score { position: absolute; top: 10px; left: 10px; font-size: 20px; }
-    #question { position: absolute; top: 10px; width: 100%; text-align: center; font-size: 32px; font-weight: bold; }
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: #fafafa;
+    color: #fff;
+}
+header {
+    background: linear-gradient(135deg, #4facfe, #f093fb);
+    text-align: center;
+    padding: 60px 20px 80px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+}
+header::after {
+    content: "💊";
+    position: absolute;
+    font-size: 120px;
+    opacity: 0.08;
+    top: 10px; right: 20px;
+    transform: rotate(-20deg);
+}
+header h1 { margin: 0; font-size: 3rem; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+header h2 { margin-top: 10px; font-weight: 500; text-shadow: 0 1px 3px rgba(0,0,0,0.25); }
+header p { opacity: 0.9; }
+
+.section {
+    padding: 70px 20px;
+    text-align: center;
+    animation: fadeIn 0.7s ease both;
+    background: linear-gradient(135deg, #4facfe, #f093fb);
+    color: #fff;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    margin-bottom: 40px;
+    border-radius: 15px;
+}
+
+h2 { margin-bottom: 25px; font-size: 2rem; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+p { max-width: 700px; margin: 0 auto 25px; line-height: 1.7; font-size: 1.1rem; }
+
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+    gap: 25px;
+    justify-items: center;
+    padding: 20px 0;
+}
+
+.card {
+    background: linear-gradient(135deg, #1e90ff, #ff77d1);
+    padding: 20px 25px;
+    border-radius: 18px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    width: 100%;
+    max-width: 300px;
+    font-weight: 600;
+    text-align: center;
+}
+
+ul.ingredients {
+    list-style: none;
+    padding: 25px 30px;
+    margin: 0 auto;
+    max-width: 400px;
+    background: linear-gradient(135deg, #1e90ff, #ff77d1);
+    border-radius: 18px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    color: #fff;
+}
+ul.ingredients li {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.3);
+    font-weight: 500;
+}
+ul.ingredients li:last-child { border-bottom: none; }
+
+.buy-btn {
+    display: inline-block;
+    margin-top: 40px;
+    background: linear-gradient(135deg, #1e90ff, #ff77d1);
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 18px 40px;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.buy-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+}
+
+@keyframes fadeIn {
+    from { opacity:0; transform: translateY(10px); }
+    to { opacity:1; transform: translateY(0); }
+}
 </style>
 </head>
 <body>
-<div id="score">Score: 0</div>
-<div id="question"></div>
-<canvas id="gameCanvas" width="800" height="600"></canvas>
+
+<header>
+    <h1>Alacer Pharma</h1>
+    <h2>Tinorpicin — No Delay</h2>
+    <p>Unlock a world of speed and productivity!</p>
+</header>
+
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+function createSection(title, text = '', listItems = [], extraHTML = '') {
+    const section = document.createElement('section');
+    section.className = 'section';
 
-let score = 0;
-let bullets = [];
-let answers = [];
-let currentQuestionIndex = 0;
-let gameOver = false;
+    let innerHTML = `<h2>${title}</h2>`;
+    if(text) innerHTML += `<p>${text}</p>`;
 
-// Sample questions — replace with full 100 later
-const questions = [
-  {q:"Which is a prime number?", options:["4","7","9","12"], answer:"7"},
-  {q:"Simplify: 3 + 5 - 2", options:["6","5","7","8"], answer:"6"},
-  {q:"LCM of 4 and 6?", options:["10","12","14","24"], answer:"12"},
-  {q:"What is -3 + 5?", options:["2","-2","3","1"], answer:"2"},
-  {q:"3x if x = 2?", options:["6","5","4","8"], answer:"6"},
-];
-
-const player = { x: canvas.width/2, y: canvas.height - 50, width: 10, height: 10, speed: 7 };
-const keys = {};
-
-document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
-document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
-document.addEventListener('keydown', e => { if(e.key === ' ') shoot(); });
-
-function shoot() {
-    bullets.push({x: player.x, y: player.y, width: 4, height: 10});
-}
-
-function generateAnswers() {
-    answers = [];
-    const opts = questions[currentQuestionIndex].options;
-    for(let i=0;i<opts.length;i++){
-        answers.push({
-            x: 200 + i*150,
-            y: -100,
-            z: 300 + i*50, // pseudo-3D depth
-            width: 100,
-            height: 50,
-            text: opts[i],
-            speed: 1.2 + Math.random()*0.5 // slower than before
+    if(listItems.length){
+        innerHTML += '<div class="card-grid">';
+        listItems.forEach(item=>{
+            innerHTML += `<div class="card">${item}</div>`;
         });
+        innerHTML += '</div>';
     }
-    document.getElementById('question').innerText = questions[currentQuestionIndex].q;
+
+    if(extraHTML) innerHTML += extraHTML;
+
+    section.innerHTML = innerHTML;
+    document.body.appendChild(section);
 }
 
-function update() {
-    if(gameOver) return;
+// Sections in order
+createSection(
+  'What is Procrastination?',
+  'Procrastination is the act of delaying or avoiding tasks you need to do, even when you know they’re important. Instead of starting, you might scroll social media, play games, or wait until the last minute.\n\nWhile it might feel good in the moment, procrastination often leads to:',
+  ['⏳ Missed deadlines','😩 Stress and panic','📉 Lower performance','😞 Guilt or frustration']
+);
 
-    // Move player
-    if(keys['a'] && player.x > 0) player.x -= player.speed;
-    if(keys['d'] && player.x < canvas.width) player.x += player.speed;
-    if(keys['w'] && player.y > canvas.height/2) player.y -= player.speed;
-    if(keys['s'] && player.y < canvas.height-30) player.y += player.speed;
+createSection(
+  'What Does Tinorpicin Do?',
+  'Tinorpicin is the cure for late submissions and midnight cramming. With its fast-acting motivational formula, it clears mental fog, boosts focus, and turns "later" into "now." Perfect for anyone struggling to start tasks, Tinorpicin encourages productive habits and helps you tackle your day with energy and motivation.'
+);
 
-    // Move bullets
-    bullets.forEach((b,i)=>{
-        b.y -= 6; // slower bullets
-        answers.forEach((a,j)=>{
-            const scale = 300/a.z; 
-            const ax = a.x + (a.width*(1-scale)/2);
-            const ay = a.y + (a.height*(1-scale)/2);
-            const aw = a.width * scale;
-            const ah = a.height * scale;
+createSection(
+  'The Side Effects of Tinorpicin',
+  '',
+  ['💭 Losing track of time','🖊️ Excessive movement of pens','📁 Submitting projects early','🗓️ Overplanning']
+);
 
-            if(b.x < ax+aw && b.x+b.width>ax &&
-               b.y < ay+ah && b.y+b.height>ay){
-                if(a.text === questions[currentQuestionIndex].answer){
-                    score++;
-                    nextQuestion();
-                } else {
-                    score = Math.max(0, score-1);
-                }
-                bullets.splice(i,1);
-            }
-        });
-    });
+createSection(
+  'Ingredients',
+  '',
+  [],
+  `<ul class="ingredients">
+      <li><strong>Motivation</strong> — 60 mg</li>
+      <li><strong>Caffeine</strong> — 2 mg</li>
+      <li><strong>Anti-Procrastinol</strong> — 10 mg</li>
+      <li><strong>Focusium</strong> — 12 mg</li>
+      <li><strong>Hyperserum</strong> — 5 mg</li>
+   </ul>`
+);
 
-    // Move answers toward player
-    answers.forEach((a,i)=>{
-        a.z -= a.speed;
-        if(a.z <= 50){
-            if(a.text === questions[currentQuestionIndex].answer){
-                gameOver = true;
-                alert("You missed the correct answer! Game Over! Score: " + score);
-            } else {
-                answers.splice(i,1);
-            }
-        }
-    });
-}
+createSection(
+  'Fun Facts About Tinorpicin',
+  'Tinorpicin works quickly to help users focus and get started on tasks they\'ve been procrastinating on. Many users said it increased their motivation, organization, and a noticeable reduction in distractions. While results may vary, most users feel more productive within 5–10 minutes of taking it, making it a handy tool for tackling projects, study sessions, or busy workdays.'
+);
 
-function draw() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+createSection(
+  'When to Take Tinorpicin',
+  '',
+  ['📢 When deadlines are announced','⌛ When procrastinating'],
+  `<h3>When Not to Take Tinorpicin</h3>
+   <div class="card-grid">
+     <div class="card">🎯 When already focused</div>
+     <div class="card">😌 When there's nothing to do</div>
+   </div>`
+);
 
-    // Draw player
-    ctx.fillStyle = "white";
-    ctx.fillRect(player.x, player.y, player.width, player.height);
+createSection(
+  '⚡ Tinorpicin Helps Motivate and Stops Procrastination in as Fast as 7 Minutes!',
+  '',
+  [],
+  `<a class="buy-btn" href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank">Buy Now</a>`
+);
 
-    // Draw bullets
-    bullets.forEach(b=>{
-        ctx.fillStyle = "yellow";
-        ctx.fillRect(b.x, b.y, b.width, b.height);
-    });
-
-    // Draw answers with pseudo-3D
-    answers.forEach(a=>{
-        const scale = Math.min(300 / a.z,1);
-        const aw = a.width * scale;
-        const ah = a.height * scale;
-        const ax = a.x + (a.width*(1-scale)/2);
-        const ay = a.y + (a.height*(1-scale)/2);
-
-        ctx.fillStyle = "red";
-        ctx.fillRect(ax, ay, aw, ah);
-        ctx.fillStyle = "white";
-        ctx.font = `${20*scale + 12}px Arial`;
-        ctx.fillText(a.text, ax + 10*scale, ay + 30*scale);
-    });
-
-    document.getElementById('score').innerText = "Score: " + score;
-}
-
-function nextQuestion() {
-    currentQuestionIndex = (currentQuestionIndex+1)%questions.length;
-    generateAnswers();
-    bullets = [];
-}
-
-function gameLoop() {
-    update();
-    draw();
-    requestAnimationFrame(gameLoop);
-}
-
-generateAnswers();
-gameLoop();
+createSection(
+  'Want More Fun?',
+  '',
+  [],
+  `<a class="buy-btn" href="https://sean111111111vrotato.github.io/2048/" target="_blank">Play 2048</a>`
+);
 </script>
+
 </body>
 </html>
